@@ -2,6 +2,11 @@ package storage
 
 import "sync"
 
+type Repository interface {
+	Save(id, url string)
+	Get(id string) (string, bool)
+}
+
 // Storage управляет сохранением и получением данных.
 type Storage struct {
 	mu   sync.RWMutex

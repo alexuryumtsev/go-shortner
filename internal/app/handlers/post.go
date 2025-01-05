@@ -1,19 +1,19 @@
 package handlers
 
 import (
+	"crypto/md5"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 
 	"github.com/alexuryumtsev/go-shortener/internal/app/storage"
-
-	"golang.org/x/exp/rand"
 )
 
 const baseURL = "http://localhost:8080/"
 
 // PostHandler обрабатывает POST-запросы.
-func PostHandler(storage *storage.Storage) http.HandlerFunc {
+func PostHandler(repo storage.Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "Invalid method", http.StatusBadRequest)
@@ -34,8 +34,8 @@ func PostHandler(storage *storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		id := generateID()
-		storage.Save(id, originalURL)
+		id := generateID(originalURL)
+		repo.Save(id, originalURL)
 
 		shortenedURL := baseURL + id
 		w.WriteHeader(http.StatusCreated)
@@ -44,12 +44,6 @@ func PostHandler(storage *storage.Storage) http.HandlerFunc {
 }
 
 // generateID генерирует случайный идентификатор.
-func generateID() string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	const idLength = 8
-	b := make([]byte, idLength)
-	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
-	}
-	return string(b)
+func generateID(url string) string {
+	return fmt.Sprintf("%x", md5.Sum([]byte(url)))[:8] // Используем MD5 и берём первые 8 символов.
 }
