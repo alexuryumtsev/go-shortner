@@ -15,8 +15,8 @@ import (
 
 func TestPostHandler(t *testing.T) {
 	// тестовое хранилище.
-	st := storage.NewStorage()
-	handler := PostHandler(st)
+	repo := storage.NewStorage()
+	handler := PostHandler(repo)
 
 	type want struct {
 		code        int

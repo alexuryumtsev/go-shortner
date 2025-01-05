@@ -11,9 +11,9 @@ import (
 
 func TestGetHandler(t *testing.T) {
 	// тестовое хранилище и добавляем тестовые данные.
-	id := generateID()
-	st := storage.NewStorage()
-	st.Save(id, "https://practicum.yandex.ru/")
+	id := "testID"
+	repo := storage.NewStorage()
+	repo.Save(id, "https://practicum.yandex.ru/")
 
 	type want struct {
 		code        int
@@ -55,7 +55,7 @@ func TestGetHandler(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, tc.requestPath, nil)
 			rec := httptest.NewRecorder()
 
-			handler := GetHandler(st, tc.id)
+			handler := GetHandler(repo, tc.id)
 			handler(rec, req)
 
 			res := rec.Result()
