@@ -12,7 +12,7 @@ import (
 func TestGetHandler(t *testing.T) {
 	// тестовое хранилище и добавляем тестовые данные.
 	id := "testID"
-	repo := storage.NewStorage()
+	repo := storage.NewMockStorage()
 	repo.Save(id, "https://practicum.yandex.ru/")
 
 	type want struct {
