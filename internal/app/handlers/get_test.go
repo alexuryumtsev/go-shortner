@@ -59,6 +59,7 @@ func TestGetHandler(t *testing.T) {
 			handler(rec, req)
 
 			res := rec.Result()
+			defer res.Body.Close()
 			assert.Equal(t, tc.want.code, res.StatusCode)
 			assert.Equal(t, tc.want.header, rec.Header().Get("Location"))
 

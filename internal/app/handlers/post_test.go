@@ -57,9 +57,9 @@ func TestPostHandler(t *testing.T) {
 			handler(rec, req)
 
 			res := rec.Result()
+			defer res.Body.Close()
 			assert.Equal(t, tc.want.code, res.StatusCode)
 
-			defer res.Body.Close()
 			resBody, err := io.ReadAll(res.Body)
 			require.NoError(t, err)
 
