@@ -7,9 +7,9 @@ import (
 )
 
 // GetHandler обрабатывает GET-запросы с динамическими id.
-func GetHandler(storage *storage.Storage, id string) http.HandlerFunc {
+func GetHandler(repo storage.Repository, id string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		originalURL, exists := storage.Get(id)
+		originalURL, exists := repo.Get(id)
 		if !exists {
 			http.Error(w, "URL not found", http.StatusNotFound)
 			return

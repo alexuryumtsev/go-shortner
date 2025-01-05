@@ -11,20 +11,20 @@ import (
 
 func main() {
 	// Инициализация хранилища.
-	st := storage.NewStorage()
+	var repo storage.Repository = storage.NewStorage()
 
 	// Регистрация маршрутов.
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Проверка на метод POST для главной страницы.
 		if r.Method == http.MethodPost {
-			handlers.PostHandler(st)(w, r)
+			handlers.PostHandler(repo)(w, r)
 			return
 		}
 
 		// Парсим id из пути запроса для GET-запросов.
 		path := strings.TrimPrefix(r.URL.Path, "/")
 		if path != "" && r.Method == http.MethodGet {
-			handlers.GetHandler(st, path)(w, r)
+			handlers.GetHandler(repo, path)(w, r)
 			return
 		}
 
