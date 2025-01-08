@@ -15,11 +15,6 @@ const baseURL = "http://localhost:8080/"
 // PostHandler обрабатывает POST-запросы.
 func PostHandler(repo storage.Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "Invalid method", http.StatusBadRequest)
-			return
-		}
-
 		body, err := io.ReadAll(r.Body)
 
 		if err != nil {

@@ -6,14 +6,19 @@ import (
 	"testing"
 
 	"github.com/alexuryumtsev/go-shortener/internal/app/storage"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetHandler(t *testing.T) {
 	// тестовое хранилище и добавляем тестовые данные.
-	id := "testID"
+	id := "0dd11111"
 	repo := storage.NewMockStorage()
 	repo.Save(id, "https://practicum.yandex.ru/")
+
+	// Инициализация маршрутизатора.
+	r := chi.NewRouter()
+	r.Get("/{id}", GetHandler(repo))
 
 	type want struct {
 		code        int
@@ -23,13 +28,11 @@ func TestGetHandler(t *testing.T) {
 
 	testCases := []struct {
 		name        string
-		id          string
 		requestPath string
 		want        want
 	}{
 		{
 			name:        "Valid ID",
-			id:          id,
 			requestPath: "/" + id,
 			want: want{
 				code:        http.StatusTemporaryRedirect,
@@ -39,8 +42,7 @@ func TestGetHandler(t *testing.T) {
 		},
 		{
 			name:        "Invalid ID",
-			id:          "",
-			requestPath: "/",
+			requestPath: "/1111",
 			want: want{
 				code:        http.StatusNotFound,
 				header:      "",
@@ -55,11 +57,14 @@ func TestGetHandler(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, tc.requestPath, nil)
 			rec := httptest.NewRecorder()
 
-			handler := GetHandler(repo, tc.id)
-			handler(rec, req)
+			// Отправляем запрос через маршрутизатор.
+			r.ServeHTTP(rec, req)
 
 			res := rec.Result()
 			defer res.Body.Close()
+
+			t.Log("Value:", req)
+
 			assert.Equal(t, tc.want.code, res.StatusCode)
 			assert.Equal(t, tc.want.header, rec.Header().Get("Location"))
 

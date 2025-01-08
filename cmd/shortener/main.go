@@ -3,39 +3,29 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/alexuryumtsev/go-shortener/internal/app/handlers"
 	"github.com/alexuryumtsev/go-shortener/internal/app/storage"
+
+	"github.com/go-chi/chi/v5"
 )
 
-func main() {
+func ShortenerRouter() chi.Router {
 	// Инициализация хранилища.
 	var repo storage.Repository = storage.NewStorage()
 
 	// Регистрация маршрутов.
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Проверка на метод POST для главной страницы.
-		if r.Method == http.MethodPost {
-			handlers.PostHandler(repo)(w, r)
-			return
-		}
-
-		// Парсим id из пути запроса для GET-запросов.
-		path := strings.TrimPrefix(r.URL.Path, "/")
-		if path != "" && r.Method == http.MethodGet {
-			handlers.GetHandler(repo, path)(w, r)
-			return
-		}
-
-		// Обработка ошибок для некорректных запросов.
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+	r := chi.NewRouter()
+	r.Route("/", func(r chi.Router) {
+		r.Post("/", handlers.PostHandler(repo))
+		r.Get("/{id}", handlers.GetHandler(repo))
 	})
 
+	return r
+}
+
+func main() {
 	// Запуск сервера.
 	fmt.Println("Server started at http://localhost:8080")
-	err := http.ListenAndServe(":8080", nil)
-	if err != nil {
-		fmt.Printf("Failed to start server: %v\n", err)
-	}
+	http.ListenAndServe(":8080", ShortenerRouter())
 }
