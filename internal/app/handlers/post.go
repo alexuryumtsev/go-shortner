@@ -10,10 +10,8 @@ import (
 	"github.com/alexuryumtsev/go-shortener/internal/app/storage"
 )
 
-const baseURL = "http://localhost:8080/"
-
 // PostHandler обрабатывает POST-запросы.
-func PostHandler(repo storage.Repository) http.HandlerFunc {
+func PostHandler(repo storage.Repository, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 
@@ -32,7 +30,9 @@ func PostHandler(repo storage.Repository) http.HandlerFunc {
 		id := generateID(originalURL)
 		repo.Save(id, originalURL)
 
-		shortenedURL := baseURL + id
+		baseURL = strings.TrimSuffix(baseURL, "/")
+		shortenedURL := baseURL + "/" + id
+
 		w.WriteHeader(http.StatusCreated)
 		w.Write([]byte(shortenedURL))
 	}
