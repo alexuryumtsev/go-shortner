@@ -2,10 +2,9 @@ package config
 
 import (
 	"flag"
-	"fmt"
-	"net/url"
 	"os"
-	"regexp"
+
+	"github.com/alexuryumtsev/go-shortener/internal/app/validator"
 )
 
 type Config struct {
@@ -36,11 +35,7 @@ func InitConfig() (*Config, error) {
 	}
 
 	// Проверка формата host:port
-	hostPortPattern := `^([a-zA-Z0-9.-]+)?(:[0-9]+)$`
-	matched, err := regexp.MatchString(hostPortPattern, cfg.ServerAddress)
-	if err != nil || !matched {
-		return nil, fmt.Errorf("invalid server address format, expected host:port")
-	}
+	err := validator.ValidateServerAddress(cfg.ServerAddress)
 
 	if cfg.BaseURL == "" {
 		cfg.BaseURL = envBaseURL
@@ -49,9 +44,10 @@ func InitConfig() (*Config, error) {
 		cfg.BaseURL = "http://localhost:8080/" // Значение по умолчанию.
 	}
 
-	_, err = url.ParseRequestURI(cfg.BaseURL)
+	// Проверка корректности URL
+	err = validator.ValidateBaseURL(cfg.BaseURL)
 	if err != nil {
-		return nil, fmt.Errorf("invalid base URL: %v", err)
+		return nil, err
 	}
 
 	return cfg, nil

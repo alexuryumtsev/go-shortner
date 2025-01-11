@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/alexuryumtsev/go-shortener/internal/app/service"
 	"github.com/alexuryumtsev/go-shortener/internal/app/storage"
 )
 
 // PostHandler обрабатывает POST-запросы.
-func PostHandler(repo storage.Repository, baseURL string) http.HandlerFunc {
+func PostHandler(storage storage.URLStorage, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 
@@ -22,16 +23,12 @@ func PostHandler(repo storage.Repository, baseURL string) http.HandlerFunc {
 		defer r.Body.Close()
 
 		originalURL := strings.TrimSpace(string(body))
-		if originalURL == "" {
-			http.Error(w, "Empty URL", http.StatusBadRequest)
+		shortenedURL, err := service.NewURLService(storage, baseURL).ShortenerURL(originalURL)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-
-		id := generateID(originalURL)
-		repo.Save(id, originalURL)
-
-		baseURL = strings.TrimSuffix(baseURL, "/")
-		shortenedURL := baseURL + "/" + id
 
 		w.WriteHeader(http.StatusCreated)
 		w.Write([]byte(shortenedURL))

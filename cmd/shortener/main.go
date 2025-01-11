@@ -14,7 +14,7 @@ import (
 
 func ShortenerRouter(cfg *config.Config) chi.Router {
 	// Инициализация хранилища.
-	var repo storage.Repository = storage.NewStorage()
+	var repo storage.URLStorage = storage.NewStorage()
 
 	// Регистрация маршрутов.
 	r := chi.NewRouter()
