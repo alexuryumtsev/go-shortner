@@ -36,6 +36,9 @@ func InitConfig() (*Config, error) {
 
 	// Проверка формата host:port
 	err := validator.ValidateServerAddress(cfg.ServerAddress)
+	if err != nil {
+		return nil, err
+	}
 
 	if cfg.BaseURL == "" {
 		cfg.BaseURL = envBaseURL
