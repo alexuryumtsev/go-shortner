@@ -44,7 +44,7 @@ func TestPostHandler(t *testing.T) {
 			inputURL: "",
 			want: want{
 				code:        http.StatusBadRequest,
-				body:        "Empty URL",
+				body:        "empty URL",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},

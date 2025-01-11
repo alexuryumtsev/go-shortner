@@ -22,7 +22,7 @@ func NewURLService(storage storage.URLStorage, baseURL string) *URLService {
 
 func (s *URLService) ShortenerURL(originalURL string) (string, error) {
 	if originalURL == "" {
-		return "", fmt.Errorf("Empty URL")
+		return "", fmt.Errorf("empty URL")
 	}
 
 	id := generateID(originalURL)
