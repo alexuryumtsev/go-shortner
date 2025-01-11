@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/alexuryumtsev/go-shortener/internal/app/models"
 	"github.com/alexuryumtsev/go-shortener/internal/app/storage"
 )
 
@@ -26,7 +27,7 @@ func (s *URLService) ShortenerURL(originalURL string) (string, error) {
 	}
 
 	id := generateID(originalURL)
-	s.storage.Save(id, originalURL)
+	s.storage.Save(models.URLModel{ID: id, URL: originalURL})
 
 	shortenedURL := s.baseURL + "/" + id
 	return shortenedURL, nil

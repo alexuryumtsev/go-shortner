@@ -11,14 +11,14 @@ import (
 func GetHandler(storage storage.URLStorage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
-		originalURL, exists := storage.Get(id)
+		urlModel, exists := storage.Get(id)
 		if !exists {
 			http.Error(w, "URL not found", http.StatusNotFound)
 			return
 		}
 
 		// Ответ с редиректом на оригинальный URL.
-		w.Header().Set("Location", originalURL)
+		w.Header().Set("Location", urlModel.URL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	}
 }

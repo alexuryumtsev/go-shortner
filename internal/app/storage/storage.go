@@ -1,10 +1,14 @@
 package storage
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/alexuryumtsev/go-shortener/internal/app/models"
+)
 
 type URLStorage interface {
-	Save(id, url string)
-	Get(id string) (string, bool)
+	Save(urlModel models.URLModel)
+	Get(id string) (models.URLModel, bool)
 }
 
 // Storage управляет сохранением и получением данных.
@@ -19,16 +23,16 @@ func NewStorage() *Storage {
 }
 
 // Save сохраняет URL.
-func (s *Storage) Save(id, url string) {
+func (s *Storage) Save(urlModel models.URLModel) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.data[id] = url
+	s.data[urlModel.ID] = urlModel.URL
 }
 
 // Get возвращает оригинальный URL по идентификатору.
-func (s *Storage) Get(id string) (string, bool) {
+func (s *Storage) Get(id string) (models.URLModel, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	url, exists := s.data[id]
-	return url, exists
+	return models.URLModel{ID: id, URL: url}, exists
 }

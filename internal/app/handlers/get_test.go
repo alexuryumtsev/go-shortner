@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/alexuryumtsev/go-shortener/internal/app/models"
 	"github.com/alexuryumtsev/go-shortener/internal/app/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
@@ -14,7 +15,7 @@ func TestGetHandler(t *testing.T) {
 	// тестовое хранилище и добавляем тестовые данные.
 	id := "0dd11111"
 	repo := storage.NewMockStorage()
-	repo.Save(id, "https://practicum.yandex.ru/")
+	repo.Save(models.URLModel{ID: id, URL: "https://practicum.yandex.ru/"})
 
 	// Инициализация маршрутизатора.
 	r := chi.NewRouter()
