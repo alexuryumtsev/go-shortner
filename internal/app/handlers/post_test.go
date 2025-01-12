@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -63,8 +62,6 @@ func TestPostHandler(t *testing.T) {
 
 			resBody, err := io.ReadAll(res.Body)
 			require.NoError(t, err)
-
-			log.Println(string(resBody))
 
 			assert.True(t, strings.HasPrefix(string(resBody), tc.want.body))
 		})

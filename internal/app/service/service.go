@@ -31,7 +31,6 @@ func (s *URLService) ShortenerURL(originalURL string) (string, error) {
 
 	shortenedURL := s.baseURL + "/" + id
 	return shortenedURL, nil
-
 }
 
 func generateID(url string) string {
