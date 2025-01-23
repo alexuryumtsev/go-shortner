@@ -72,7 +72,7 @@ func TestPostHandler(t *testing.T) {
 func TestPostJsonHandler(t *testing.T) {
 	// тестовое хранилище.
 	repo := storage.NewMockStorage()
-	handler := PostJsonHandler(repo, "http://localhost:8080/")
+	handler := PostJSONHandler(repo, "http://localhost:8080/")
 
 	type want struct {
 		code         int

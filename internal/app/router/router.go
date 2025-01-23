@@ -19,7 +19,7 @@ func ShortenerRouter(cfg *config.Config) chi.Router {
 	r.Route("/", func(r chi.Router) {
 		r.Post("/", handlers.PostHandler(repo, cfg.BaseURL))
 		r.Get("/{id}", handlers.GetHandler(repo))
-		r.Post("/api/shorten", handlers.PostJsonHandler(repo, cfg.BaseURL))
+		r.Post("/api/shorten", handlers.PostJSONHandler(repo, cfg.BaseURL))
 	})
 
 	return r

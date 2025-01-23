@@ -45,7 +45,7 @@ type ResponseBody struct {
 }
 
 // PostHandler обрабатывает POST-запросы для создания коротких URL.
-func PostJsonHandler(storage storage.URLStorage, baseURL string) http.HandlerFunc {
+func PostJSONHandler(storage storage.URLStorage, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req RequestBody
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
