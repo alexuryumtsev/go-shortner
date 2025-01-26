@@ -55,11 +55,11 @@ func TestGzipMiddleware(t *testing.T) {
 
 			if strings.Contains(res.Header.Get("Content-Encoding"), "gzip") {
 				gz, err := gzip.NewReader(res.Body)
-				defer gz.Close()
 				body, err = io.ReadAll(gz)
 				if err != nil {
 					t.Fatalf("failed to create gzip reader: %v", err)
 				}
+				defer gz.Close()
 			} else {
 				body, err = io.ReadAll(res.Body)
 			}
