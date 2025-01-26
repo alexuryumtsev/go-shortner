@@ -9,6 +9,11 @@ import (
 
 func GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Если метод не POST, пропускаем запрос
+		if r.Method != http.MethodPost {
+			next.ServeHTTP(w, r)
+			return
+		}
 
 		ow := w
 		contentType := r.Header.Get("Content-Type")
