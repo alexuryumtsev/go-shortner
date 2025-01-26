@@ -3,14 +3,19 @@ package compress
 import (
 	"compress/gzip"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 )
 
 func GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
 		ow := w
+		contentType := r.Header.Get("Content-Type")
+		if !strings.Contains(contentType, "application/json") && !strings.Contains(contentType, "text/html") {
+			next.ServeHTTP(w, r)
+			return
+		}
 
 		// Если клиент поддерживает gzip, создаём writer
 		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
@@ -23,7 +28,6 @@ func GzipMiddleware(next http.Handler) http.Handler {
 		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
 			cr, err := newCompressReader(r.Body)
 			if err != nil {
-				log.Printf("Failed to create gzip reader: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -52,24 +56,11 @@ func (c *compressWriter) Header() http.Header {
 }
 
 func (c *compressWriter) Write(p []byte) (int, error) {
-	contentType := c.w.Header().Get("Content-Type")
-	if strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/html") {
-		// Ensure the Content-Encoding header is set before writing the response body
-		c.w.Header().Set("Content-Encoding", "gzip")
-		return c.zw.Write(p)
-	}
-
-	return c.w.Write(p) // Если тип контента не поддерживает сжатие, записываем без него.
+	return c.zw.Write(p)
 }
 
 func (c *compressWriter) WriteHeader(statusCode int) {
-	contentType := c.w.Header().Get("Content-Type")
-
-	// Добавляем заголовок Content-Encoding: gzip только для поддерживаемых типов.
-	if strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/html") {
-		c.w.Header().Set("Content-Encoding", "gzip")
-	}
-
+	c.w.Header().Set("Content-Encoding", "gzip")
 	c.w.WriteHeader(statusCode)
 }
 
