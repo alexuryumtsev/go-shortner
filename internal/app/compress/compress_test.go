@@ -7,6 +7,9 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGzipMiddleware(t *testing.T) {
@@ -55,22 +58,18 @@ func TestGzipMiddleware(t *testing.T) {
 
 			if strings.Contains(res.Header.Get("Content-Encoding"), "gzip") {
 				gz, err := gzip.NewReader(res.Body)
+				require.NoError(t, err)
+
 				body, err = io.ReadAll(gz)
-				if err != nil {
-					t.Fatalf("failed to create gzip reader: %v", err)
-				}
+				require.NoError(t, err)
+
 				defer gz.Close()
 			} else {
 				body, err = io.ReadAll(res.Body)
 			}
 
-			if err != nil {
-				t.Fatalf("failed to read response body: %v", err)
-			}
-
-			if string(body) != tt.expectedBody {
-				t.Errorf("expected body %s, got %s", tt.expectedBody, body)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedBody, string(body))
 		})
 	}
 }
