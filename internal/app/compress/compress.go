@@ -9,70 +9,63 @@ import (
 
 func GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Если метод не POST, пропускаем запрос
-		if r.Method != http.MethodPost {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		contentType := r.Header.Get("Content-Type")
-		if !strings.Contains(contentType, "application/json") && !strings.Contains(contentType, "text/html") {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		ow := w
-		// Если клиент поддерживает gzip, создаём writer
-		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			cw := newCompressWriter(w)
-			ow = cw
-			defer cw.Close()
-		}
-
-		// Если запрос сжат (gzip), создаём reader
+		// Обрабатываем сжатые запросы (Content-Encoding: gzip)
 		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
 			cr, err := newCompressReader(r.Body)
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, "Failed to read compressed request", http.StatusBadRequest)
 				return
 			}
 			r.Body = cr
 			defer cr.Close()
 		}
 
+		// Обрабатываем сжатые ответы (Accept-Encoding: gzip)
+		ow := w
+		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			ow = &conditionalCompressWriter{
+				ResponseWriter: w,
+				writer:         gzip.NewWriter(w),
+			}
+			defer ow.(*conditionalCompressWriter).Close()
+		}
+
 		next.ServeHTTP(ow, r)
 	})
 }
 
-type compressWriter struct {
-	w  http.ResponseWriter
-	zw *gzip.Writer
+// conditionalCompressWriter сжимает только нужные типы контента.
+type conditionalCompressWriter struct {
+	http.ResponseWriter
+	writer *gzip.Writer
 }
 
-func newCompressWriter(w http.ResponseWriter) *compressWriter {
-	return &compressWriter{
-		w:  w,
-		zw: gzip.NewWriter(w),
+func (cw *conditionalCompressWriter) WriteHeader(statusCode int) {
+	contentType := cw.Header().Get("Content-Type")
+
+	// Сжимаем только application/json и text/html.
+	if strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/html") {
+		cw.Header().Set("Content-Encoding", "gzip")
 	}
+
+	cw.ResponseWriter.WriteHeader(statusCode)
 }
 
-func (c *compressWriter) Header() http.Header {
-	return c.w.Header()
+func (cw *conditionalCompressWriter) Write(p []byte) (int, error) {
+	if cw.Header().Get("Content-Encoding") == "gzip" {
+		return cw.writer.Write(p)
+	}
+	return cw.ResponseWriter.Write(p)
 }
 
-func (c *compressWriter) Write(p []byte) (int, error) {
-	return c.zw.Write(p)
+func (cw *conditionalCompressWriter) Close() error {
+	if cw.Header().Get("Content-Encoding") == "gzip" {
+		return cw.writer.Close()
+	}
+	return nil
 }
 
-func (c *compressWriter) WriteHeader(statusCode int) {
-	c.w.Header().Add("Content-Encoding", "gzip")
-	c.w.WriteHeader(statusCode)
-}
-
-func (c *compressWriter) Close() error {
-	return c.zw.Close()
-}
-
+// compressReader распаковывает входящие данные.
 type compressReader struct {
 	r  io.ReadCloser
 	zr *gzip.Reader
@@ -80,27 +73,26 @@ type compressReader struct {
 
 func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 	if r == nil {
-		return nil, nil // Если тела нет, ничего не делаем.
+		return nil, nil // Если тела запроса нет, возвращаем nil.
 	}
 	zr, err := gzip.NewReader(r)
 	if err != nil {
 		r.Close()
 		return nil, err
 	}
-
 	return &compressReader{
 		r:  r,
 		zr: zr,
 	}, nil
 }
 
-func (c *compressReader) Read(p []byte) (int, error) {
-	return c.zr.Read(p)
+func (cr *compressReader) Read(p []byte) (int, error) {
+	return cr.zr.Read(p)
 }
 
-func (c *compressReader) Close() error {
-	if err := c.zr.Close(); err != nil {
+func (cr *compressReader) Close() error {
+	if err := cr.zr.Close(); err != nil {
 		return err
 	}
-	return c.r.Close()
+	return cr.r.Close()
 }
