@@ -15,13 +15,13 @@ func GzipMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ow := w
 		contentType := r.Header.Get("Content-Type")
 		if !strings.Contains(contentType, "application/json") && !strings.Contains(contentType, "text/html") {
 			next.ServeHTTP(w, r)
 			return
 		}
 
+		ow := w
 		// Если клиент поддерживает gzip, создаём writer
 		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			cw := newCompressWriter(w)

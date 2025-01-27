@@ -29,7 +29,6 @@ func PostHandler(storage storage.URLStorage, baseURL string) http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
 		w.Write([]byte(shortenedURL))
 	}
