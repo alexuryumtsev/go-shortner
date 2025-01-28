@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 
@@ -62,6 +63,11 @@ func (s *Storage) Get(id string) (models.URLModel, bool) {
 
 // saveToFile сохраняет данные в файл.
 func (s *Storage) saveToFile(urlModel models.URLModel) error {
+	// Проверяем, существует ли директория, и создаем её, если не существует.
+	if err := s.ensureDirExists(); err != nil {
+		return err
+	}
+
 	file, err := os.OpenFile(s.filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
@@ -92,6 +98,11 @@ func (s *Storage) LoadFromFile() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	// Проверяем, существует ли директория, и создаем её, если не существует.
+	if err := s.ensureDirExists(); err != nil {
+		return err
+	}
+
 	file, err := os.Open(s.filePath)
 	if os.IsNotExist(err) {
 		// Если файл не существует, создаем его.
@@ -117,6 +128,17 @@ func (s *Storage) LoadFromFile() error {
 
 	if err := scanner.Err(); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (s *Storage) ensureDirExists() error {
+	dir := filepath.Dir(s.filePath)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return err
+		}
 	}
 
 	return nil
