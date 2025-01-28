@@ -1,6 +1,8 @@
 package router
 
 import (
+	"log"
+
 	"github.com/alexuryumtsev/go-shortener/config"
 	"github.com/alexuryumtsev/go-shortener/internal/app/compress"
 	"github.com/alexuryumtsev/go-shortener/internal/app/handlers"
@@ -12,7 +14,12 @@ import (
 // ShortenerRouter создает маршруты для приложения.
 func ShortenerRouter(cfg *config.Config) chi.Router {
 	// Инициализация хранилища.
-	var repo storage.URLStorage = storage.NewStorage()
+	var repo storage.URLStorage = storage.NewStorage(cfg.FileStoragePath)
+
+	// Загрузка данных из файла.
+	if err := repo.LoadFromFile(); err != nil {
+		log.Printf("Error loading storage from file: %v", err)
+	}
 
 	// Регистрация маршрутов.
 	r := chi.NewRouter()
