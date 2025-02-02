@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"testing"
@@ -14,31 +15,31 @@ func TestStorage_SaveAndLoad(t *testing.T) {
 	defer os.Remove(filePath)
 
 	storage := NewStorage(filePath)
-
+	ctx := context.Background()
 	urlModel1 := models.URLModel{ID: "4rSPg8ap", URL: "http://yandex.ru"}
 	urlModel2 := models.URLModel{ID: "edVPg3ks", URL: "http://ya.ru"}
 	urlModel3 := models.URLModel{ID: "dG56Hqxm", URL: "http://practicum.yandex.ru"}
 
 	// Test Save
-	err := storage.Save(urlModel1)
+	err := storage.Save(urlModel1, ctx)
 	assert.NoError(t, err)
 
-	err = storage.Save(urlModel2)
+	err = storage.Save(urlModel2, ctx)
 	assert.NoError(t, err)
 
-	err = storage.Save(urlModel3)
+	err = storage.Save(urlModel3, ctx)
 	assert.NoError(t, err)
 
 	// Test Get
-	result, exists := storage.Get("4rSPg8ap")
+	result, exists := storage.Get("4rSPg8ap", ctx)
 	assert.True(t, exists)
 	assert.Equal(t, urlModel1, result)
 
-	result, exists = storage.Get("edVPg3ks")
+	result, exists = storage.Get("edVPg3ks", ctx)
 	assert.True(t, exists)
 	assert.Equal(t, urlModel2, result)
 
-	result, exists = storage.Get("dG56Hqxm")
+	result, exists = storage.Get("dG56Hqxm", ctx)
 	assert.True(t, exists)
 	assert.Equal(t, urlModel3, result)
 
@@ -47,15 +48,15 @@ func TestStorage_SaveAndLoad(t *testing.T) {
 	err = newStorage.LoadFromFile()
 	assert.NoError(t, err)
 
-	result, exists = newStorage.Get("4rSPg8ap")
+	result, exists = newStorage.Get("4rSPg8ap", ctx)
 	assert.True(t, exists)
 	assert.Equal(t, urlModel1, result)
 
-	result, exists = newStorage.Get("edVPg3ks")
+	result, exists = newStorage.Get("edVPg3ks", ctx)
 	assert.True(t, exists)
 	assert.Equal(t, urlModel2, result)
 
-	result, exists = newStorage.Get("dG56Hqxm")
+	result, exists = newStorage.Get("dG56Hqxm", ctx)
 	assert.True(t, exists)
 	assert.Equal(t, urlModel3, result)
 }
@@ -65,9 +66,9 @@ func TestStorage_SaveToFileFormat(t *testing.T) {
 	defer os.Remove(filePath)
 
 	storage := NewStorage(filePath)
-
+	ctx := context.Background()
 	urlModel := models.URLModel{ID: "4rSPg8ap", URL: "http://yandex.ru"}
-	err := storage.Save(urlModel)
+	err := storage.Save(urlModel, ctx)
 	assert.NoError(t, err)
 
 	file, err := os.Open(filePath)

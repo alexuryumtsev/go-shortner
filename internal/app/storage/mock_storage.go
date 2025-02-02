@@ -1,6 +1,10 @@
 package storage
 
-import "github.com/alexuryumtsev/go-shortener/internal/app/models"
+import (
+	"context"
+
+	"github.com/alexuryumtsev/go-shortener/internal/app/models"
+)
 
 type MockStorage struct {
 	data map[string]models.URLModel
@@ -10,12 +14,12 @@ func NewMockStorage() *MockStorage {
 	return &MockStorage{data: make(map[string]models.URLModel)}
 }
 
-func (m *MockStorage) Save(urlModel models.URLModel) error {
+func (m *MockStorage) Save(urlModel models.URLModel, ctx context.Context) error {
 	m.data[urlModel.ID] = urlModel
 	return nil
 }
 
-func (m *MockStorage) Get(id string) (models.URLModel, bool) {
+func (m *MockStorage) Get(id string, ctx context.Context) (models.URLModel, bool) {
 	urlModel, exists := m.data[id]
 	return urlModel, exists
 }

@@ -14,6 +14,13 @@ type Config struct {
 	FileStoragePath string // Путь к файлу хранилища
 }
 
+// Значения по умолчанию.
+const (
+	defaultServerAddress = ":8080"
+	defaultBaseURL       = "http://localhost:8080/"
+	defaultStoragePath   = "tmp/storage.json"
+)
+
 func InitConfig() (*Config, error) {
 	cfg := &Config{}
 
@@ -37,7 +44,7 @@ func InitConfig() (*Config, error) {
 	}
 
 	if cfg.ServerAddress == "" {
-		cfg.ServerAddress = ":8080" // Значение по умолчанию.
+		cfg.ServerAddress = defaultServerAddress
 	}
 
 	// Проверка формата host:port
@@ -51,7 +58,7 @@ func InitConfig() (*Config, error) {
 	}
 
 	if cfg.BaseURL == "" {
-		cfg.BaseURL = "http://localhost:8080/" // Значение по умолчанию.
+		cfg.BaseURL = defaultBaseURL
 	}
 
 	if cfg.FileStoragePath != "" {
@@ -63,7 +70,7 @@ func InitConfig() (*Config, error) {
 	}
 
 	if cfg.FileStoragePath == "" {
-		cfg.FileStoragePath = "tmp/storage.json" // Значение по умолчанию.
+		cfg.FileStoragePath = defaultStoragePath
 	}
 
 	// Проверка корректности URL

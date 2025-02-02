@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,7 +16,7 @@ func TestGetHandler(t *testing.T) {
 	// тестовое хранилище и добавляем тестовые данные.
 	id := "0dd11111"
 	repo := storage.NewMockStorage()
-	repo.Save(models.URLModel{ID: id, URL: "https://practicum.yandex.ru/"})
+	repo.Save(models.URLModel{ID: id, URL: "https://practicum.yandex.ru/"}, context.Background())
 
 	// Инициализация маршрутизатора.
 	r := chi.NewRouter()

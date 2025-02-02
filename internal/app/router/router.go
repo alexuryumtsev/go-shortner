@@ -14,7 +14,7 @@ import (
 // ShortenerRouter создает маршруты для приложения.
 func ShortenerRouter(cfg *config.Config) chi.Router {
 	// Инициализация хранилища.
-	var repo storage.URLStorage = storage.NewStorage(cfg.FileStoragePath)
+	repo := storage.NewStorage(cfg.FileStoragePath)
 
 	// Загрузка данных из файла.
 	if err := repo.LoadFromFile(); err != nil {

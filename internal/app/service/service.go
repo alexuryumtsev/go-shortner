@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/md5"
 	"fmt"
 	"strings"
@@ -10,11 +11,12 @@ import (
 )
 
 type URLService struct {
-	storage storage.URLStorage
+	storage storage.URLWriter
 	baseURL string
+	ctx     context.Context
 }
 
-func NewURLService(storage storage.URLStorage, baseURL string) *URLService {
+func NewURLService(storage storage.URLWriter, baseURL string, ctx context.Context) *URLService {
 	return &URLService{
 		storage: storage,
 		baseURL: strings.TrimSuffix(baseURL, "/"),
@@ -27,7 +29,7 @@ func (s *URLService) ShortenerURL(originalURL string) (string, error) {
 	}
 
 	id := generateID(originalURL)
-	s.storage.Save(models.URLModel{ID: id, URL: originalURL})
+	s.storage.Save(models.URLModel{ID: id, URL: originalURL}, s.ctx)
 
 	shortenedURL := s.baseURL + "/" + id
 	return shortenedURL, nil

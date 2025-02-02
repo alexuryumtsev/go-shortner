@@ -11,7 +11,7 @@ import (
 )
 
 // PostHandler обрабатывает POST-запросы.
-func PostHandler(storage storage.URLStorage, baseURL string) http.HandlerFunc {
+func PostHandler(storage storage.URLWriter, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 
@@ -21,8 +21,9 @@ func PostHandler(storage storage.URLStorage, baseURL string) http.HandlerFunc {
 		}
 		defer r.Body.Close()
 
+		ctx := r.Context()
 		originalURL := strings.TrimSpace(string(body))
-		shortenedURL, err := service.NewURLService(storage, baseURL).ShortenerURL(originalURL)
+		shortenedURL, err := service.NewURLService(storage, baseURL, ctx).ShortenerURL(originalURL)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -45,15 +46,17 @@ type ResponseBody struct {
 }
 
 // PostHandler обрабатывает POST-запросы для создания коротких URL.
-func PostJSONHandler(storage storage.URLStorage, baseURL string) http.HandlerFunc {
+func PostJSONHandler(storage storage.URLWriter, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req RequestBody
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "invalid request body", http.StatusBadRequest)
 			return
 		}
+		defer r.Body.Close()
 
-		shortenedURL, err := service.NewURLService(storage, baseURL).ShortenerURL(req.URL)
+		ctx := r.Context()
+		shortenedURL, err := service.NewURLService(storage, baseURL, ctx).ShortenerURL(req.URL)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
