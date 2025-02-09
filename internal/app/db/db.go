@@ -17,7 +17,7 @@ type Database struct {
 func NewDatabaseConnection(ctx context.Context, dsn string) (*Database, error) {
 	poolConfig, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
-		return nil, fmt.Errorf("Error parsing DSN: %w", err)
+		return nil, fmt.Errorf("error parsing DSN: %w", err)
 	}
 
 	// Устанавливаем таймауты
@@ -25,7 +25,7 @@ func NewDatabaseConnection(ctx context.Context, dsn string) (*Database, error) {
 
 	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {
-		return nil, fmt.Errorf("Database connection error: %w", err)
+		return nil, fmt.Errorf("database connection error: %w", err)
 	}
 
 	return &Database{pool: pool}, nil
@@ -34,7 +34,7 @@ func NewDatabaseConnection(ctx context.Context, dsn string) (*Database, error) {
 // Close закрывает соединение с базой данных
 func (db *Database) Close() {
 	db.pool.Close()
-	log.Println("Database connection closed")
+	log.Println("database connection closed")
 }
 
 // Ping проверяет соединение с базой данных
