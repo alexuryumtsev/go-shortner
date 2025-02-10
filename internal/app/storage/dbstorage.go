@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/alexuryumtsev/go-shortener/internal/app/db"
 	"github.com/alexuryumtsev/go-shortener/internal/app/models"
@@ -19,6 +20,12 @@ func NewDatabaseStorage(db *db.Database) *DatabaseStorage {
 
 // Save сохраняет URL в базе данных.
 func (s *DatabaseStorage) Save(ctx context.Context, urlModel models.URLModel) error {
+	query := `INSERT INTO urls (short_url, original_url) VALUES ($1, $2)`
+	_, err := s.db.Pool.Exec(ctx, query, urlModel.ID, urlModel.URL)
+
+	if err != nil {
+		return fmt.Errorf("failed to save URL: %w", err)
+	}
 	return nil
 }
 
@@ -43,5 +50,8 @@ func (s *DatabaseStorage) LoadFromFile() error {
 
 // Ping проверяет соединение с базой данных.
 func (s *DatabaseStorage) Ping(ctx context.Context) error {
+	if s.db == nil || s.db.Pool == nil {
+		return fmt.Errorf("database connection is not initialized")
+	}
 	return s.db.Ping(ctx)
 }

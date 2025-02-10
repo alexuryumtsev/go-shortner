@@ -11,13 +11,14 @@ import (
 )
 
 type URLService struct {
+	ctx     context.Context
 	storage storage.URLWriter
 	baseURL string
-	ctx     context.Context
 }
 
-func NewURLService(storage storage.URLWriter, baseURL string, ctx context.Context) *URLService {
+func NewURLService(ctx context.Context, storage storage.URLWriter, baseURL string) *URLService {
 	return &URLService{
+		ctx:     ctx,
 		storage: storage,
 		baseURL: strings.TrimSuffix(baseURL, "/"),
 	}
