@@ -27,18 +27,18 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	pool, err := db.NewDatabaseConnection(ctx, cfg.DatabaseDSN)
-	if err != nil {
-		log.Fatalf("Failed connect to db: %v", err)
-	}
-	defer pool.Close()
-
-	// Инициализируем хранилище
 	var repo storage.URLStorage
 	if cfg.DatabaseDSN != "" {
+		pool, err := db.NewDatabaseConnection(ctx, cfg.DatabaseDSN)
+		if err != nil {
+			log.Fatalf("Failed connect to db: %v", err)
+		}
+		defer pool.Close()
 		repo = storage.NewDatabaseStorage(pool)
-	} else {
+	} else if cfg.FileStoragePath != "" {
 		repo = storage.NewFileStorage(cfg.FileStoragePath)
+	} else {
+		repo = storage.NewInMemoryStorage()
 	}
 
 	// Запуск сервера
