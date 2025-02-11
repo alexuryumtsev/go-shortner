@@ -1,4 +1,4 @@
-package storage
+package pg
 
 import (
 	"context"
@@ -29,6 +29,28 @@ func (s *DatabaseStorage) Save(ctx context.Context, urlModel models.URLModel) er
 	return nil
 }
 
+// SaveBatch сохраняет множество URL в базе данных.
+func (s *DatabaseStorage) SaveBatch(ctx context.Context, urlModels []models.URLModel) error {
+	tx, err := s.db.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	for _, urlModel := range urlModels {
+		query := `INSERT INTO urls (short_url, original_url) VALUES ($1, $2)`
+		_, err := tx.Exec(ctx, query, urlModel.ID, urlModel.URL)
+		if err != nil {
+			return fmt.Errorf("failed to save URL: %w", err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	return nil
+}
+
 // Get возвращает оригинальный URL по идентификатору из базы данных.
 func (s *DatabaseStorage) Get(ctx context.Context, id string) (models.URLModel, bool) {
 	query := `SELECT original_url FROM urls WHERE short_url = $1`
@@ -50,8 +72,5 @@ func (s *DatabaseStorage) LoadFromFile() error {
 
 // Ping проверяет соединение с базой данных.
 func (s *DatabaseStorage) Ping(ctx context.Context) error {
-	if s.db == nil || s.db.Pool == nil {
-		return fmt.Errorf("database connection is not initialized")
-	}
 	return s.db.Ping(ctx)
 }

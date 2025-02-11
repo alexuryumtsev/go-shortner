@@ -1,4 +1,4 @@
-package storage
+package memory
 
 import (
 	"context"
@@ -28,6 +28,16 @@ func (s *InMemoryStorage) Save(ctx context.Context, urlModel models.URLModel) er
 	return nil
 }
 
+// SaveBatch сохраняет множество URL в памяти.
+func (s *InMemoryStorage) SaveBatch(ctx context.Context, urlModels []models.URLModel) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, urlModel := range urlModels {
+		s.data[urlModel.ID] = urlModel.URL
+	}
+	return nil
+}
+
 // Get возвращает оригинальный URL по идентификатору из памяти.
 func (s *InMemoryStorage) Get(ctx context.Context, id string) (models.URLModel, bool) {
 	s.mu.RLock()
@@ -38,5 +48,10 @@ func (s *InMemoryStorage) Get(ctx context.Context, id string) (models.URLModel, 
 
 // LoadFromFile загружает данные из памяти (не требуется для памяти).
 func (s *InMemoryStorage) LoadFromFile() error {
+	return nil
+}
+
+// Ping проверяет соединение с памятью (всегда возвращает nil).
+func (s *InMemoryStorage) Ping(ctx context.Context) error {
 	return nil
 }

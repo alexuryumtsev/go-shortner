@@ -11,6 +11,9 @@ import (
 	"github.com/alexuryumtsev/go-shortener/internal/app/logger"
 	"github.com/alexuryumtsev/go-shortener/internal/app/router"
 	"github.com/alexuryumtsev/go-shortener/internal/app/storage"
+	"github.com/alexuryumtsev/go-shortener/internal/app/storage/file"
+	"github.com/alexuryumtsev/go-shortener/internal/app/storage/memory"
+	"github.com/alexuryumtsev/go-shortener/internal/app/storage/pg"
 )
 
 func main() {
@@ -34,11 +37,11 @@ func main() {
 			log.Fatalf("Failed connect to db: %v", err)
 		}
 		defer pool.Close()
-		repo = storage.NewDatabaseStorage(pool)
+		repo = pg.NewDatabaseStorage(pool)
 	} else if cfg.FileStoragePath != "" {
-		repo = storage.NewFileStorage(cfg.FileStoragePath)
+		repo = file.NewFileStorage(cfg.FileStoragePath)
 	} else {
-		repo = storage.NewInMemoryStorage()
+		repo = memory.NewInMemoryStorage()
 	}
 
 	// Запуск сервера

@@ -29,13 +29,13 @@ func (s *URLService) ShortenerURL(originalURL string) (string, error) {
 		return "", fmt.Errorf("empty URL")
 	}
 
-	id := generateID(originalURL)
+	id := GenerateID(originalURL)
 	s.storage.Save(s.ctx, models.URLModel{ID: id, URL: originalURL})
 
 	shortenedURL := s.baseURL + "/" + id
 	return shortenedURL, nil
 }
 
-func generateID(url string) string {
+func GenerateID(url string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(url)))[:8] // Используем MD5 и берём первые 8 символов.
 }

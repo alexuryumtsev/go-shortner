@@ -1,4 +1,4 @@
-package storage
+package file
 
 import (
 	"context"
@@ -54,6 +54,37 @@ func (s *FileStorage) Save(ctx context.Context, urlModel models.URLModel) error 
 	return s.fileStorage.SaveRecord(file, s.counter, urlModel)
 }
 
+// SaveBatch сохраняет множество URL в файл.
+func (s *FileStorage) SaveBatch(ctx context.Context, urlModels []models.URLModel) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	file, err := os.OpenFile(s.filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	for _, urlModel := range urlModels {
+		// Проверяем, существует ли уже оригинальный URL
+		for _, existingURL := range s.data {
+			if existingURL == urlModel.URL {
+				// Если URL уже существует, ничего не делаем
+				continue
+			}
+		}
+
+		s.data[urlModel.ID] = urlModel.URL
+		s.counter++
+
+		if err := s.fileStorage.SaveRecord(file, s.counter, urlModel); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Get возвращает оригинальный URL по идентификатору.
 func (s *FileStorage) Get(ctx context.Context, id string) (models.URLModel, bool) {
 	s.mu.RLock()
@@ -94,5 +125,10 @@ func (s *FileStorage) LoadFromFile() error {
 	}
 
 	s.data = data
+	return nil
+}
+
+// Ping проверяет соединение с базой данных (для файлового хранилища всегда возвращает nil).
+func (s *FileStorage) Ping(ctx context.Context) error {
 	return nil
 }
