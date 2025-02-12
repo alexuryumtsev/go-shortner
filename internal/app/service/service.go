@@ -42,7 +42,6 @@ func (s *URLService) ShortenerURL(originalURL string) (string, error) {
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			return shortenedURL, err
 		}
-		return "", err
 	}
 
 	return shortenedURL, nil
