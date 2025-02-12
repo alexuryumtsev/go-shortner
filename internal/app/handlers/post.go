@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -9,6 +10,8 @@ import (
 	"github.com/alexuryumtsev/go-shortener/internal/app/models"
 	"github.com/alexuryumtsev/go-shortener/internal/app/service"
 	"github.com/alexuryumtsev/go-shortener/internal/app/storage"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // PostHandler обрабатывает POST-запросы.
@@ -27,6 +30,13 @@ func PostHandler(storage storage.URLWriter, baseURL string) http.HandlerFunc {
 		shortenedURL, err := service.NewURLService(ctx, storage, baseURL).ShortenerURL(originalURL)
 
 		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+				w.WriteHeader(http.StatusConflict)
+				w.Write([]byte(shortenedURL))
+				return
+			}
+
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -60,6 +70,17 @@ func PostJSONHandler(storage storage.URLWriter, baseURL string) http.HandlerFunc
 		shortenedURL, err := service.NewURLService(ctx, storage, baseURL).ShortenerURL(req.URL)
 
 		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+				resp := ResponseBody{
+					ShortURL: shortenedURL,
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusConflict)
+				json.NewEncoder(w).Encode(resp)
+				return
+			}
+
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -74,63 +95,59 @@ func PostJSONHandler(storage storage.URLWriter, baseURL string) http.HandlerFunc
 	}
 }
 
-type BatchRequest struct {
-	CorrelationID string `json:"correlation_id"`
-	OriginalURL   string `json:"original_url"`
-}
-
-type BatchResponse struct {
-	CorrelationID string `json:"correlation_id"`
-	ShortURL      string `json:"short_url"`
-}
-
 // PostBatchHandler обрабатывает POST-запросы для создания множества коротких URL.
 func PostBatchHandler(repo storage.URLStorage, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		baseURL = strings.TrimSuffix(baseURL, "/")
 
-		var batchRequests []BatchRequest
-		if err := json.NewDecoder(r.Body).Decode(&batchRequests); err != nil {
+		var batchModels []models.URLBatchModel
+		if err := json.NewDecoder(r.Body).Decode(&batchModels); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
 
-		if len(batchRequests) == 0 {
+		if len(batchModels) == 0 {
 			http.Error(w, "Empty batch", http.StatusBadRequest)
 			return
 		}
 
-		var batchResponses []BatchResponse
-		for _, req := range batchRequests {
-			urlModel := models.URLModel{
-				ID:  service.GenerateID(req.OriginalURL), // Функция для генерации короткого ID
-				URL: req.OriginalURL,
-			}
+		ctx := r.Context()
+		urlService := service.NewURLService(ctx, repo, baseURL)
 
-			// Проверяем, существует ли уже оригинальный URL
-			existingURLModel, exists := repo.Get(r.Context(), urlModel.ID)
-			if exists {
-				batchResponses = append(batchResponses, BatchResponse{
-					CorrelationID: req.CorrelationID,
-					ShortURL:      baseURL + "/" + existingURLModel.ID,
-				})
-				continue
-			}
-
-			if err := repo.Save(r.Context(), urlModel); err != nil {
-				http.Error(w, "Failed to save URL", http.StatusInternalServerError)
+		shortenedURLs, err := urlService.SaveBatchShortenerURL(batchModels)
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+				var batchResponseModels []models.BatchResponseModel
+				for i, shortenedURL := range shortenedURLs {
+					batchResponseModels = append(batchResponseModels, models.BatchResponseModel{
+						CorrelationID: batchModels[i].CorrelationID,
+						ShortURL:      shortenedURL,
+					})
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusConflict)
+				if err := json.NewEncoder(w).Encode(batchResponseModels); err != nil {
+					http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+				}
 				return
 			}
 
-			batchResponses = append(batchResponses, BatchResponse{
-				CorrelationID: req.CorrelationID,
-				ShortURL:      baseURL + "/" + urlModel.ID,
+			http.Error(w, "Failed to save URL", http.StatusInternalServerError)
+			return
+		}
+
+		var batchResponseModels []models.BatchResponseModel
+		for i, shortenedURL := range shortenedURLs {
+			batchResponseModels = append(batchResponseModels, models.BatchResponseModel{
+				CorrelationID: batchModels[i].CorrelationID,
+				ShortURL:      shortenedURL,
 			})
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(batchResponses); err != nil {
+		if err := json.NewEncoder(w).Encode(batchResponseModels); err != nil {
 			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		}
 	}

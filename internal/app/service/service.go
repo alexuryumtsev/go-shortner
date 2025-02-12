@@ -3,11 +3,14 @@ package service
 import (
 	"context"
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/alexuryumtsev/go-shortener/internal/app/models"
 	"github.com/alexuryumtsev/go-shortener/internal/app/storage"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type URLService struct {
@@ -30,10 +33,46 @@ func (s *URLService) ShortenerURL(originalURL string) (string, error) {
 	}
 
 	id := GenerateID(originalURL)
-	s.storage.Save(s.ctx, models.URLModel{ID: id, URL: originalURL})
-
+	urlModel := models.URLModel{ID: id, URL: originalURL}
 	shortenedURL := s.baseURL + "/" + id
+
+	err := s.storage.Save(s.ctx, urlModel)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			return shortenedURL, err
+		}
+		return "", err
+	}
+
 	return shortenedURL, nil
+}
+
+func (s *URLService) SaveBatchShortenerURL(batchModels []models.URLBatchModel) ([]string, error) {
+	var urlModels []models.URLModel
+	for _, req := range batchModels {
+		urlModels = append(urlModels, models.URLModel{
+			ID:  GenerateID(req.OriginalURL), // Функция для генерации короткого ID
+			URL: req.OriginalURL,
+		})
+	}
+
+	var shortenedURLs []string
+	for _, urlModel := range urlModels {
+		shortenedURLs = append(shortenedURLs, s.baseURL+"/"+urlModel.ID)
+	}
+
+	err := s.storage.SaveBatch(s.ctx, urlModels)
+
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			return shortenedURLs, err
+		}
+		return nil, err
+	}
+
+	return shortenedURLs, nil
 }
 
 func GenerateID(url string) string {

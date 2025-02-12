@@ -6,6 +6,8 @@ import (
 
 	"github.com/alexuryumtsev/go-shortener/internal/app/db"
 	"github.com/alexuryumtsev/go-shortener/internal/app/models"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // DatabaseStorage управляет сохранением и получением данных в базе данных.
@@ -24,6 +26,9 @@ func (s *DatabaseStorage) Save(ctx context.Context, urlModel models.URLModel) er
 	_, err := s.db.Pool.Exec(ctx, query, urlModel.ID, urlModel.URL)
 
 	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UniqueViolation {
+			return fmt.Errorf("conflict: %w", err)
+		}
 		return fmt.Errorf("failed to save URL: %w", err)
 	}
 	return nil
@@ -38,7 +43,7 @@ func (s *DatabaseStorage) SaveBatch(ctx context.Context, urlModels []models.URLM
 	defer tx.Rollback(ctx)
 
 	for _, urlModel := range urlModels {
-		query := `INSERT INTO urls (short_url, original_url) VALUES ($1, $2)`
+		query := `INSERT INTO urls (short_url, original_url) VALUES ($1, $2) ON CONFLICT (short_url) DO NOTHING`
 		_, err := tx.Exec(ctx, query, urlModel.ID, urlModel.URL)
 		if err != nil {
 			return fmt.Errorf("failed to save URL: %w", err)

@@ -19,6 +19,13 @@ func (m *MockStorage) Save(ctx context.Context, urlModel models.URLModel) error 
 	return nil
 }
 
+func (m *MockStorage) SaveBatch(ctx context.Context, urlModels []models.URLModel) error {
+	for _, urlModel := range urlModels {
+		m.data[urlModel.ID] = urlModel
+	}
+	return nil
+}
+
 func (m *MockStorage) Get(ctx context.Context, id string) (models.URLModel, bool) {
 	urlModel, exists := m.data[id]
 	return urlModel, exists
