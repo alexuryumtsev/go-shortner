@@ -27,7 +27,7 @@ func ErrorMiddleware(next http.Handler) http.Handler {
 func ProcessError(w http.ResponseWriter, err error, shortenedURL string) {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-		// Если ошибка уникальности
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
 		w.Write([]byte(shortenedURL))
 		return
