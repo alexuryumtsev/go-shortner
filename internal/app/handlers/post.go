@@ -12,16 +12,6 @@ import (
 	"github.com/alexuryumtsev/go-shortener/internal/app/storage"
 )
 
-// RequestBody определяет структуру входных данных.
-type RequestBody struct {
-	URL string `json:"url"`
-}
-
-// ResponseBody определяет структуру ответа.
-type ResponseBody struct {
-	ShortURL string `json:"result"`
-}
-
 // PostHandler обрабатывает POST-запросы для создания короткого URL.
 func PostHandler(storage storage.URLWriter, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +27,7 @@ func PostHandler(storage storage.URLWriter, baseURL string) http.HandlerFunc {
 		shortenedURL, err := service.NewURLService(ctx, storage, baseURL).ShortenerURL(originalURL)
 
 		if err != nil {
-			middleware.ProcessError(w, err, shortenedURL)
+			middleware.ProcessError(w, err, shortenedURL, true)
 			return
 		}
 
@@ -49,7 +39,7 @@ func PostHandler(storage storage.URLWriter, baseURL string) http.HandlerFunc {
 // PostJSONHandler обрабатывает POST-запросы для создания короткого URL в формате JSON.
 func PostJSONHandler(storage storage.URLWriter, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req RequestBody
+		var req models.RequestBody
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "invalid request body", http.StatusBadRequest)
 			return
@@ -60,11 +50,11 @@ func PostJSONHandler(storage storage.URLWriter, baseURL string) http.HandlerFunc
 		shortenedURL, err := service.NewURLService(ctx, storage, baseURL).ShortenerURL(req.URL)
 
 		if err != nil {
-			middleware.ProcessError(w, err, shortenedURL)
+			middleware.ProcessError(w, err, shortenedURL, false)
 			return
 		}
 
-		resp := ResponseBody{
+		resp := models.ResponseBody{
 			ShortURL: shortenedURL,
 		}
 
@@ -95,7 +85,7 @@ func PostBatchHandler(repo storage.URLStorage, baseURL string) http.HandlerFunc 
 
 		shortenedURLs, err := urlService.SaveBatchShortenerURL(batchModels)
 		if err != nil {
-			middleware.ProcessError(w, err, "")
+			middleware.ProcessError(w, err, "", false)
 			return
 		}
 

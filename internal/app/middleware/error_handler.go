@@ -1,9 +1,11 @@
 package middleware
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
+	"github.com/alexuryumtsev/go-shortener/internal/app/models"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -24,12 +26,21 @@ func ErrorMiddleware(next http.Handler) http.Handler {
 }
 
 // ProcessError — функция для обработки ошибок в контексте работы с БД.
-func ProcessError(w http.ResponseWriter, err error, shortenedURL string) {
+func ProcessError(w http.ResponseWriter, err error, shortenedURL string, responseString bool) {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
-		w.Write([]byte(shortenedURL))
+
+		if responseString {
+			w.Write([]byte(shortenedURL))
+			return
+		}
+
+		json.NewEncoder(w).Encode(models.ResponseBody{
+			ShortURL: shortenedURL,
+		})
+
 		return
 	}
 

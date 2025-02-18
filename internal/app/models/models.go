@@ -14,3 +14,13 @@ type BatchResponseModel struct {
 	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`
 }
+
+// RequestBody определяет структуру входных данных.
+type RequestBody struct {
+	URL string `json:"url"`
+}
+
+// ResponseBody определяет структуру ответа.
+type ResponseBody struct {
+	ShortURL string `json:"result"`
+}
