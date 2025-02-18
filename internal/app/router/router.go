@@ -7,6 +7,7 @@ import (
 	"github.com/alexuryumtsev/go-shortener/internal/app/compress"
 	"github.com/alexuryumtsev/go-shortener/internal/app/handlers"
 	"github.com/alexuryumtsev/go-shortener/internal/app/logger"
+	"github.com/alexuryumtsev/go-shortener/internal/app/middleware"
 	"github.com/alexuryumtsev/go-shortener/internal/app/storage"
 	"github.com/alexuryumtsev/go-shortener/internal/app/storage/file"
 	"github.com/go-chi/chi/v5"
@@ -25,6 +26,7 @@ func ShortenerRouter(cfg *config.Config, repo storage.URLStorage) chi.Router {
 	r := chi.NewRouter()
 	r.Use(logger.Middleware)
 	r.Use(compress.GzipMiddleware)
+	r.Use(middleware.ErrorMiddleware)
 	r.Route("/", func(r chi.Router) {
 		r.Post("/", handlers.PostHandler(repo, cfg.BaseURL))
 		r.Get("/{id}", handlers.GetHandler(repo))

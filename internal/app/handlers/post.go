@@ -2,49 +2,15 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"strings"
 
+	"github.com/alexuryumtsev/go-shortener/internal/app/middleware"
 	"github.com/alexuryumtsev/go-shortener/internal/app/models"
 	"github.com/alexuryumtsev/go-shortener/internal/app/service"
 	"github.com/alexuryumtsev/go-shortener/internal/app/storage"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5/pgconn"
 )
-
-// PostHandler обрабатывает POST-запросы.
-func PostHandler(storage storage.URLWriter, baseURL string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
-
-		if err != nil {
-			http.Error(w, "Failed to read request body", http.StatusBadRequest)
-			return
-		}
-		defer r.Body.Close()
-
-		ctx := r.Context()
-		originalURL := strings.TrimSpace(string(body))
-		shortenedURL, err := service.NewURLService(ctx, storage, baseURL).ShortenerURL(originalURL)
-
-		if err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-				w.WriteHeader(http.StatusConflict)
-				w.Write([]byte(shortenedURL))
-				return
-			}
-
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(shortenedURL))
-	}
-}
 
 // RequestBody определяет структуру входных данных.
 type RequestBody struct {
@@ -56,7 +22,31 @@ type ResponseBody struct {
 	ShortURL string `json:"result"`
 }
 
-// PostHandler обрабатывает POST-запросы для создания коротких URL.
+// PostHandler обрабатывает POST-запросы для создания короткого URL.
+func PostHandler(storage storage.URLWriter, baseURL string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "Failed to read request body", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		ctx := r.Context()
+		originalURL := strings.TrimSpace(string(body))
+		shortenedURL, err := service.NewURLService(ctx, storage, baseURL).ShortenerURL(originalURL)
+
+		if err != nil {
+			middleware.ProcessError(w, err, shortenedURL)
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(shortenedURL))
+	}
+}
+
+// PostJSONHandler обрабатывает POST-запросы для создания короткого URL в формате JSON.
 func PostJSONHandler(storage storage.URLWriter, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req RequestBody
@@ -70,18 +60,7 @@ func PostJSONHandler(storage storage.URLWriter, baseURL string) http.HandlerFunc
 		shortenedURL, err := service.NewURLService(ctx, storage, baseURL).ShortenerURL(req.URL)
 
 		if err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-				resp := ResponseBody{
-					ShortURL: shortenedURL,
-				}
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusConflict)
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			middleware.ProcessError(w, err, shortenedURL)
 			return
 		}
 
@@ -116,24 +95,7 @@ func PostBatchHandler(repo storage.URLStorage, baseURL string) http.HandlerFunc 
 
 		shortenedURLs, err := urlService.SaveBatchShortenerURL(batchModels)
 		if err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-				var batchResponseModels []models.BatchResponseModel
-				for i, shortenedURL := range shortenedURLs {
-					batchResponseModels = append(batchResponseModels, models.BatchResponseModel{
-						CorrelationID: batchModels[i].CorrelationID,
-						ShortURL:      shortenedURL,
-					})
-				}
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusConflict)
-				if err := json.NewEncoder(w).Encode(batchResponseModels); err != nil {
-					http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-				}
-				return
-			}
-
-			http.Error(w, "Failed to save URL", http.StatusInternalServerError)
+			middleware.ProcessError(w, err, "")
 			return
 		}
 
