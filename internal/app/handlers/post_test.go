@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/alexuryumtsev/go-shortener/internal/app/models"
 	"github.com/alexuryumtsev/go-shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -76,8 +77,8 @@ func TestPostJsonHandler(t *testing.T) {
 
 	type want struct {
 		code         int
-		body         RequestBody
-		expectedBody ResponseBody
+		body         models.RequestBody
+		expectedBody models.ResponseBody
 		contentType  string
 	}
 
@@ -90,10 +91,10 @@ func TestPostJsonHandler(t *testing.T) {
 			name: "Valid URL",
 			want: want{
 				code: http.StatusCreated,
-				body: RequestBody{
+				body: models.RequestBody{
 					URL: "https://practicum.yandex.ru/",
 				},
-				expectedBody: ResponseBody{
+				expectedBody: models.ResponseBody{
 					ShortURL: "http://localhost:8080/",
 				},
 				contentType: "Content-Type: application/json",
@@ -103,8 +104,8 @@ func TestPostJsonHandler(t *testing.T) {
 			name: "Invalid request body",
 			want: want{
 				code:         http.StatusBadRequest,
-				body:         RequestBody{},
-				expectedBody: ResponseBody{},
+				body:         models.RequestBody{},
+				expectedBody: models.ResponseBody{},
 				contentType:  "Content-Type: application/json",
 			},
 		},
@@ -126,7 +127,7 @@ func TestPostJsonHandler(t *testing.T) {
 			resBody, err := io.ReadAll(res.Body)
 			require.NoError(t, err)
 
-			var resp ResponseBody
+			var resp models.ResponseBody
 
 			json.Unmarshal(resBody, &resp)
 
