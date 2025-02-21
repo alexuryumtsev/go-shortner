@@ -31,6 +31,16 @@ func (m *MockStorage) Get(ctx context.Context, id string) (models.URLModel, bool
 	return urlModel, exists
 }
 
+func (m *MockStorage) GetUserURLs(ctx context.Context, userID string) ([]models.URLModel, error) {
+	var userURLs []models.URLModel
+	for _, urlModel := range m.data {
+		if urlModel.UserID == userID {
+			userURLs = append(userURLs, urlModel)
+		}
+	}
+	return userURLs, nil
+}
+
 // LoadFromFile имитирует загрузку данных из файла.
 func (m *MockStorage) LoadFromFile() error {
 	// Можно имитировать ошибку или инициализировать данными для тестов.

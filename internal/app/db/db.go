@@ -45,6 +45,7 @@ func (db *Database) createTables(ctx context.Context) error {
 	query := `
     CREATE TABLE IF NOT EXISTS urls (
         id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
         short_url VARCHAR(255) NOT NULL UNIQUE,
         original_url TEXT NOT NULL
     );

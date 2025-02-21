@@ -14,6 +14,7 @@ import (
 type FileStorage struct {
 	mu          sync.RWMutex
 	data        map[string]string
+	userData    map[string][]models.URLModel
 	filePath    string
 	counter     int
 	fileStorage *fileutils.FileStorage
@@ -23,6 +24,7 @@ type FileStorage struct {
 func NewFileStorage(filePath string) *FileStorage {
 	return &FileStorage{
 		data:        make(map[string]string),
+		userData:    make(map[string][]models.URLModel),
 		filePath:    filePath,
 		counter:     0,
 		fileStorage: fileutils.NewFileStorage(filePath),
@@ -43,6 +45,8 @@ func (s *FileStorage) Save(ctx context.Context, urlModel models.URLModel) error 
 	}
 
 	s.data[urlModel.ID] = urlModel.URL
+	userID := urlModel.UserID
+	s.userData[userID] = append(s.userData[userID], urlModel)
 	s.counter++
 
 	file, err := os.OpenFile(s.filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -74,7 +78,9 @@ func (s *FileStorage) SaveBatch(ctx context.Context, urlModels []models.URLModel
 			}
 		}
 
+		userID := urlModel.UserID
 		s.data[urlModel.ID] = urlModel.URL
+		s.userData[userID] = append(s.userData[userID], urlModel)
 		s.counter++
 
 		if err := s.fileStorage.SaveRecord(file, s.counter, urlModel); err != nil {
@@ -91,6 +97,17 @@ func (s *FileStorage) Get(ctx context.Context, id string) (models.URLModel, bool
 	defer s.mu.RUnlock()
 	url, exists := s.data[id]
 	return models.URLModel{ID: id, URL: url}, exists
+}
+
+// GetUserURLs возвращает все URL, сокращённые пользователем.
+func (s *FileStorage) GetUserURLs(ctx context.Context, userID string) ([]models.URLModel, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	urls, exists := s.userData[userID]
+	if !exists {
+		return nil, nil
+	}
+	return urls, nil
 }
 
 // LoadFromFile загружает данные из файла.

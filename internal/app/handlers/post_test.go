@@ -10,15 +10,19 @@ import (
 	"testing"
 
 	"github.com/alexuryumtsev/go-shortener/internal/app/models"
+	"github.com/alexuryumtsev/go-shortener/internal/app/service/user"
 	"github.com/alexuryumtsev/go-shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPostHandler(t *testing.T) {
+	userID := "test-user"
+
 	// тестовое хранилище.
 	repo := storage.NewMockStorage()
-	handler := PostHandler(repo, "http://localhost:8080/")
+	mockUserService := user.NewMockUserService(userID)
+	handler := PostHandler(repo, mockUserService, "http://localhost:8080/")
 
 	type want struct {
 		code        int
@@ -71,9 +75,12 @@ func TestPostHandler(t *testing.T) {
 }
 
 func TestPostJsonHandler(t *testing.T) {
+	userID := "test-user"
+
 	// тестовое хранилище.
 	repo := storage.NewMockStorage()
-	handler := PostJSONHandler(repo, "http://localhost:8080/")
+	mockUserService := user.NewMockUserService(userID)
+	handler := PostJSONHandler(repo, mockUserService, "http://localhost:8080/")
 
 	type want struct {
 		code         int

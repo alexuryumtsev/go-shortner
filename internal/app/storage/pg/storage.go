@@ -22,8 +22,8 @@ func NewDatabaseStorage(db *db.Database) *DatabaseStorage {
 
 // Save сохраняет URL в базе данных.
 func (s *DatabaseStorage) Save(ctx context.Context, urlModel models.URLModel) error {
-	query := `INSERT INTO urls (short_url, original_url) VALUES ($1, $2)`
-	_, err := s.db.Pool.Exec(ctx, query, urlModel.ID, urlModel.URL)
+	query := `INSERT INTO urls (user_id, short_url, original_url) VALUES ($1, $2, $3)`
+	_, err := s.db.Pool.Exec(ctx, query, urlModel.UserID, urlModel.ID, urlModel.URL)
 
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UniqueViolation {
@@ -43,8 +43,8 @@ func (s *DatabaseStorage) SaveBatch(ctx context.Context, urlModels []models.URLM
 	defer tx.Rollback(ctx)
 
 	for _, urlModel := range urlModels {
-		query := `INSERT INTO urls (short_url, original_url) VALUES ($1, $2) ON CONFLICT (short_url) DO NOTHING`
-		_, err := tx.Exec(ctx, query, urlModel.ID, urlModel.URL)
+		query := `INSERT INTO urls (user_id, short_url, original_url) VALUES ($1, $2, $3) ON CONFLICT (short_url) DO NOTHING`
+		_, err := tx.Exec(ctx, query, urlModel.UserID, urlModel.ID, urlModel.URL)
 		if err != nil {
 			return fmt.Errorf("failed to save URL: %w", err)
 		}
@@ -68,6 +68,27 @@ func (s *DatabaseStorage) Get(ctx context.Context, id string) (models.URLModel, 
 		return models.URLModel{}, false
 	}
 	return urlModel, true
+}
+
+// GetUserURLs возвращает все URL, сокращённые пользователем.
+func (s *DatabaseStorage) GetUserURLs(ctx context.Context, userID string) ([]models.URLModel, error) {
+	query := `SELECT short_url, original_url FROM urls WHERE user_id = $1`
+	rows, err := s.db.Pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user URLs: %w", err)
+	}
+	defer rows.Close()
+
+	var urls []models.URLModel
+	for rows.Next() {
+		var urlModel models.URLModel
+		if err := rows.Scan(&urlModel.ID, &urlModel.URL); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		urls = append(urls, urlModel)
+	}
+
+	return urls, nil
 }
 
 // LoadFromFile загружает данные из базы данных (не требуется для базы данных).
