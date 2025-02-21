@@ -9,6 +9,7 @@ import (
 // URLReader определяет методы для чтения URL.
 type URLReader interface {
 	Get(ctx context.Context, id string) (models.URLModel, bool)
+	GetUserURLs(ctx context.Context, userID string) ([]models.URLModel, error)
 	LoadFromFile() error
 }
 
