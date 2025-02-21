@@ -1,13 +1,12 @@
 package user
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 // UserService интерфейс для работы с пользователями
@@ -29,8 +28,8 @@ func NewUserService(secretKey string) UserService {
 
 // GenerateUserID генерирует случайный ID пользователя
 func GenerateUserID() string {
-	hash := sha256.Sum256(make([]byte, 16))
-	return hex.EncodeToString(hash[:])
+	id := uuid.New()
+	return id.String()
 }
 
 // GenerateUserToken создает JWT-токен для пользователя
