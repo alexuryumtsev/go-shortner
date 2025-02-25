@@ -1,4 +1,4 @@
-package service
+package url
 
 import (
 	"context"
@@ -13,27 +13,36 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-type URLService struct {
+// URLService интерфейс для сокращения URL
+type URLService interface {
+	ShortenerURL(originalURL, userID string) (string, error)
+	SaveBatchShortenerURL(batchModels []models.URLBatchModel, userID string) ([]string, error)
+}
+
+// urlService реализация URLService
+type urlService struct {
 	ctx     context.Context
 	storage storage.URLWriter
 	baseURL string
 }
 
-func NewURLService(ctx context.Context, storage storage.URLWriter, baseURL string) *URLService {
-	return &URLService{
+// NewURLService конструктор URLService
+func NewURLService(ctx context.Context, storage storage.URLWriter, baseURL string) URLService {
+	return &urlService{
 		ctx:     ctx,
 		storage: storage,
 		baseURL: strings.TrimSuffix(baseURL, "/"),
 	}
 }
 
-func (s *URLService) ShortenerURL(originalURL string) (string, error) {
+// ShortenerURL сокращает URL и сохраняет в базе
+func (s *urlService) ShortenerURL(originalURL, userID string) (string, error) {
 	if originalURL == "" {
 		return "", fmt.Errorf("empty URL")
 	}
 
 	id := GenerateID(originalURL)
-	urlModel := models.URLModel{ID: id, URL: originalURL}
+	urlModel := models.URLModel{ID: id, URL: originalURL, UserID: userID}
 	shortenedURL := s.baseURL + "/" + id
 
 	err := s.storage.Save(s.ctx, urlModel)
@@ -47,22 +56,23 @@ func (s *URLService) ShortenerURL(originalURL string) (string, error) {
 	return shortenedURL, nil
 }
 
-func (s *URLService) SaveBatchShortenerURL(batchModels []models.URLBatchModel) ([]string, error) {
+// SaveBatchShortenerURL сокращает пакет URL
+func (s *urlService) SaveBatchShortenerURL(batchModels []models.URLBatchModel, userID string) ([]string, error) {
 	var urlModels []models.URLModel
 	for _, req := range batchModels {
 		urlModels = append(urlModels, models.URLModel{
-			ID:  GenerateID(req.OriginalURL), // Функция для генерации короткого ID
-			URL: req.OriginalURL,
+			ID:     GenerateID(req.OriginalURL),
+			URL:    req.OriginalURL,
+			UserID: userID,
 		})
 	}
 
 	var shortenedURLs []string
 	for _, urlModel := range urlModels {
-		shortenedURLs = append(shortenedURLs, s.baseURL+"/"+urlModel.ID)
+		shortenedURLs = append(shortenedURLs, s.baseURL + "/" + urlModel.ID)
 	}
 
 	err := s.storage.SaveBatch(s.ctx, urlModels)
-
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
@@ -74,6 +84,7 @@ func (s *URLService) SaveBatchShortenerURL(batchModels []models.URLBatchModel) (
 	return shortenedURLs, nil
 }
 
+// GenerateID создает короткий идентификатор для URL
 func GenerateID(url string) string {
-	return fmt.Sprintf("%x", md5.Sum([]byte(url)))[:8] // Используем MD5 и берём первые 8 символов.
+	return fmt.Sprintf("%x", md5.Sum([]byte(url)))[:8]
 }

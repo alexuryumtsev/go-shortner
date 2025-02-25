@@ -19,7 +19,7 @@ type Config struct {
 const (
 	defaultServerAddress = ":8080"
 	defaultBaseURL       = "http://localhost:8080/"
-	defaultStoragePath   = "tmp/storage.json"
+	defaultStoragePath   = "/tmp/storage.json"
 	defaultDatabaseDSN   = ""
 )
 
