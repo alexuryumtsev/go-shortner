@@ -47,7 +47,8 @@ func (db *Database) createTables(ctx context.Context) error {
         id SERIAL PRIMARY KEY,
         user_id VARCHAR(255) NOT NULL,
         short_url VARCHAR(255) NOT NULL UNIQUE,
-        original_url TEXT NOT NULL
+        original_url TEXT NOT NULL,
+		is_deleted BOOLEAN DEFAULT FALSE
     );
     `
 	_, err := db.Pool.Exec(ctx, query)

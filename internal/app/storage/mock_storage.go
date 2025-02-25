@@ -52,3 +52,13 @@ func (m *MockStorage) SaveToFile(filePath string) error {
 	// Для тестов можно просто возвращать успешный результат.
 	return nil
 }
+
+func (m *MockStorage) DeleteUserURLs(ctx context.Context, userID string, shortURLs []string) error {
+	for _, shortURL := range shortURLs {
+		if urlModel, exists := m.data[shortURL]; exists && urlModel.UserID == userID {
+			urlModel.Deleted = true
+			m.data[shortURL] = urlModel
+		}
+	}
+	return nil
+}

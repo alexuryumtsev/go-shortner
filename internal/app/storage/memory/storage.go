@@ -72,3 +72,22 @@ func (s *InMemoryStorage) LoadFromFile() error {
 func (s *InMemoryStorage) Ping(ctx context.Context) error {
 	return nil
 }
+
+func (s *InMemoryStorage) DeleteUserURLs(ctx context.Context, userID string, shortURLs []string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, shortURL := range shortURLs {
+		if url, exists := s.data[shortURL]; exists {
+			for i, userURL := range s.userData[userID] {
+				if userURL.ID == shortURL {
+					s.userData[userID][i].Deleted = true
+					break
+				}
+			}
+			s.data[shortURL] = url
+		}
+	}
+
+	return nil
+}

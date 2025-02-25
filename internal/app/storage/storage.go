@@ -17,6 +17,7 @@ type URLReader interface {
 type URLWriter interface {
 	Save(ctx context.Context, urlModel models.URLModel) error
 	SaveBatch(ctx context.Context, urlModels []models.URLModel) error
+	DeleteUserURLs(ctx context.Context, userID string, shortURLs []string) error
 }
 
 // URLStorage объединяет интерфейсы URLReader и URLWriter.

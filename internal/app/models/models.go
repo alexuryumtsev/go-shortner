@@ -2,9 +2,10 @@ package models
 
 // URLMapping структура для хранения URL и его сокращённого идентификатора.
 type URLModel struct {
-	ID     string
-	URL    string
-	UserID string
+	ID      string
+	URL     string
+	UserID  string
+	Deleted bool
 }
 type URLBatchModel struct {
 	CorrelationID string `json:"correlation_id"`

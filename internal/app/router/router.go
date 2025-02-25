@@ -41,6 +41,7 @@ func ShortenerRouter(cfg *config.Config, repo storage.URLStorage, userService us
 		r.Get("/{id}", handlers.GetHandler(repo))
 		r.Get("/ping", handlers.PingHandler(repo))
 		r.Get("/api/user/urls", handlers.GetUserURLsHandler(repo, userService, cfg.BaseURL))
+		r.Delete("/api/user/urls", handlers.DeleteUserURLsHandler(repo, userService))
 		r.Post("/api/shorten", handlers.PostJSONHandler(repo, userService, cfg.BaseURL))
 		r.Post("/api/shorten/batch", handlers.PostBatchHandler(repo, userService, cfg.BaseURL))
 	})

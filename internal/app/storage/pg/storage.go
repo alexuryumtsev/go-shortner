@@ -58,12 +58,12 @@ func (s *DatabaseStorage) SaveBatch(ctx context.Context, urlModels []models.URLM
 
 // Get возвращает оригинальный URL по идентификатору из базы данных.
 func (s *DatabaseStorage) Get(ctx context.Context, id string) (models.URLModel, bool) {
-	query := `SELECT original_url FROM urls WHERE short_url = $1`
+	query := `SELECT original_url, is_deleted FROM urls WHERE short_url = $1`
 	row := s.db.Pool.QueryRow(ctx, query, id)
 
 	var urlModel models.URLModel
 	urlModel.ID = id
-	err := row.Scan(&urlModel.URL)
+	err := row.Scan(&urlModel.URL, &urlModel.Deleted)
 	if err != nil {
 		return models.URLModel{}, false
 	}
@@ -72,7 +72,7 @@ func (s *DatabaseStorage) Get(ctx context.Context, id string) (models.URLModel, 
 
 // GetUserURLs возвращает все URL, сокращённые пользователем.
 func (s *DatabaseStorage) GetUserURLs(ctx context.Context, userID string) ([]models.URLModel, error) {
-	query := `SELECT short_url, original_url FROM urls WHERE user_id = $1`
+	query := `SELECT short_url, original_url FROM urls WHERE is_deleted IS FALSE AND user_id = $1`
 	rows, err := s.db.Pool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user URLs: %w", err)
@@ -99,4 +99,25 @@ func (s *DatabaseStorage) LoadFromFile() error {
 // Ping проверяет соединение с базой данных.
 func (s *DatabaseStorage) Ping(ctx context.Context) error {
 	return s.db.Ping(ctx)
+}
+
+func (s *DatabaseStorage) DeleteUserURLs(ctx context.Context, userID string, shortURLs []string) error {
+	tx, err := s.db.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	for _, shortURL := range shortURLs {
+		query := `UPDATE urls SET is_deleted = true WHERE user_id = $1 AND short_url = $2`
+		_, err = tx.Exec(ctx, query, userID, shortURL)
+		if err != nil {
+			return fmt.Errorf("failed to delete URLs: %w", err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	return nil
 }
